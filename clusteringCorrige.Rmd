@@ -1,0 +1,121 @@
+---
+title: "clustering"
+author: "ROA SERRANO Walter - LIEPO Brice-Kevin - Maxence FUZELLIER- Antoine BARBET"
+date: "8/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, libraries, include=FALSE}
+library(readr)
+library(ggplot2)
+library(factoextra)
+library(tidyverse)
+library(gridExtra)
+library(cluster)
+setwd("/Users/walterroaserrano/Desktop/M22021/apprentissageNONsupervise")
+getwd()
+```
+
+```{r, chargement, results="hide", message=FALSE, echo=FALSE}
+varied <- read.csv(file = 'varied.csv',row.names=1, header=FALSE)
+```
+
+<h1 id= "index">Indice</h1>
+
+<a href="#Presentation">Présentation des données</a>
+
+<a href="#Determiner">Determiner le nombre optimal de classe</a>
+
+<a href="#Classification">Classification ascendante hiérarchique (CAH)</a>
+
+<a href="#K-means">K-means</a>
+
+<h1 id= "Presentation">Présentation des données</h1>
+
+```{r presentation}
+head(varied, n = 5)
+tail(varied, n = 5)
+summary(varied)
+str(varied)
+pairs(varied)
+```
+
+```{r, omit, include=FALSE}
+#na.omit
+na.omit(varied)
+varied.scale <- scale(varied)
+```
+
+<a href="#index">Back</a>
+
+<h1 id= "Determiner">Determiner le nombre optimal de classe</h1>
+
+## Elbow method:
+```{r elbow}
+fviz_nbclust(varied.scale, kmeans, method = "wss") +
+  geom_vline(xintercept = 3, linetype = 2)+
+  labs(subtitle = "Elbow method")
+```
+
+## Silhouette method
+```{r silhouette}
+fviz_nbclust(varied.scale, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+```
+
+## Compute gap statistic for kmeans
+```{r gap}
+set.seed(123)
+fviz_nbclust(varied.scale, kmeans, nstart = 5,  method = "gap_stat", nboot = 50)+
+  labs(subtitle = "Gap statistic method")
+```
+
+<a href="#index">Back</a>
+
+<h1 id= "Classification">Classification ascendante hiérarchique (CAH)</h1>
+
+<h2 id= "Matrice">Matrice de distance</h2>
+```{r distance}
+varied.dist <- dist(varied.scale, method = 'euclidean', p=3)
+varied.cah <- hclust(varied.dist, method = 'ward.D2')
+```
+
+<h2 id= "Liste">Liste de groupes</h2>
+```{r liste}
+groupes.cah <- cutree(varied.cah, k=3)
+sort(groupes.cah)
+```
+
+<h2 id= "Dendrogrammme">Dendrogrammme</h2>
+```{r dendrogrammme}
+plot(varied.cah)
+rect.hclust(varied.cah, k=3)
+```
+
+<h1 id= "K-means">K-means</h1>
+```{r fviz}
+varied.kmeans2 <- kmeans(varied.scale, centers = 2, nstart = 25)
+varied.kmeans3 <- kmeans(varied.scale, centers = 3, nstart = 25)
+varied.kmeans4 <- kmeans(varied.scale, centers = 4, nstart = 25)  
+varied.kmeans5 <- kmeans(varied.scale, centers = 5, nstart = 25) 
+table(groupes.cah, varied.kmeans2$cluster) 
+```
+
+<h2 id= "Comparaison">Comparaison des graphes par nombre de cluster</h2>
+
+```{r comparing}
+plot1 <- fviz_cluster(varied.kmeans2, geom = "point", data = varied) + ggtitle("k = 2")
+plot2 <- fviz_cluster(varied.kmeans3, geom = "point", data = varied) + ggtitle("k = 3")
+plot3 <- fviz_cluster(varied.kmeans4, geom = "point", data = varied) + ggtitle("k = 4")
+plot4 <- fviz_cluster(varied.kmeans5, geom = "point", data = varied) + ggtitle("k = 5")
+plot1
+plot2
+plot3
+plot4
+```
+
+<a href="#index">Back</a>
